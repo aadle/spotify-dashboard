@@ -1,9 +1,13 @@
-# Retrieve data in a user set specific period, and dump it into .json-files.
-
 # TODO:
 # - [ ] Replace dumping logic with function call instead.
+# - [ ] Need to account for possible failures with API? E.g.
+    # {
+    #     "message": "Operation failed - Most likely the backend service failed. Please try again.",
+    #     "error": 8
+    # }
 
 import json
+import logging
 import requests
 import time
 from pytz import utc
@@ -13,11 +17,13 @@ from typing import Dict
 with open("../secrets/lastfm.json") as f:
     api_credentials = json.load(f) 
 
+date_format = "%Y-%m-%d"
+
+file_path = "../data/last_fm_listening_history/"
+
 BASE_URL = "http://ws.audioscrobbler.com/2.0/"
 NUM_REQUESTS = 50
 USER = "GammelPerson"
-
-date_format = "%Y-%m-%d"
 
 request_parameters = {
     "limit": NUM_REQUESTS,
@@ -31,9 +37,14 @@ request_parameters = {
     "page": 1
     }
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger()
 
 # A function which finds the number of pages to process for a request?
-def request_helper(start:str, end:str, num_requests:int=NUM_REQUESTS):
+def request_helper(start:str, end:str) -> (int, Dict):
     start_unix_seconds = int(
         utc.localize(datetime.strptime(start, date_format)).timestamp()
     )
@@ -41,38 +52,43 @@ def request_helper(start:str, end:str, num_requests:int=NUM_REQUESTS):
         utc.localize(datetime.strptime(end, date_format)).timestamp()
     )
 
-    # Move out of function, set "from" and "to" as None and overwrite in
-    # function? E.g.
-        # request_parameters["from"] = start
-        # request_parameters["to"] = end 
-
-    request_parameters = {
-        "limit":num_requests,
-        "user": "GammelPerson",
-        "from": start_unix_seconds,
-        "to": end_unix_seconds,
-        "extended": 0,
-        "api_key": api_credentials["client_id"],
-        "format": "json",
-        "method": "user.getrecenttracks"
-    }
+    request_parameters["from"] = start_unix_seconds
+    request_parameters["to"] = end_unix_seconds 
 
     response = requests.get(url=BASE_URL, params=request_parameters)
 
-    if response.status_code != 200:
-        print(f"Failed. Actual response code: {response.status_code}.")
-        return None, None
-    else:
+    # TODO: 
+    # - [ ] Improve upon the design here. 
+    # - [ ] Catch edge cases when the API isn't responsive.
+        # Cases:
+        # - status_code is not 200
+        # - status_code is 200 but the returned .json-file containts keys "message" and "error"
+
+    try:
+        # Retrieving data
         attributes = response.json()["recenttracks"]["@attr"]
-        print(attributes)
-        num_pages = int(attributes["totalPages"])
+        num_pages = int(attributes["totalPages"]) 
         return num_pages, response.json()
+    except KeyError:
+        # If we get a faulty response, its likely one of two cases.
+        if response.status_code != 200:
+            logging.error(
+                f"Data retrieval failed. Response code: {response.status_code}."
+            )
+        else:
+            message = response.json()["message"]
+            error_code = response.json()["error"]
+            logging.error(
+                f"API error: {message}. Error code: {error_code}."
+            )
+        return 0, {}
+        
 
 def dump_response_to_json(response:Dict, full_save_path:str):
-    out_file = {}
-    out_file["tracks"] = []
+    json_out = {}
+    json_out["tracks"] = []
     tracks = response["recenttracks"]["track"]
-    for i, track in enumerate(tracks, 1):
+    for track in tracks:
         track_info = {
                 "artist_name": track["artist"]["#text"],
                 "artist_mbid": track["artist"]["mbid"],
@@ -82,62 +98,54 @@ def dump_response_to_json(response:Dict, full_save_path:str):
                 "track_mbid": track["mbid"],
                 "date_played_unix": int(track["date"]["uts"])
             }
-        out_file["tracks"].append(track_info)
+        json_out["tracks"].append(track_info)
     
     with open(full_save_path, "w") as outfile:
-        json.dump(out_file, outfile, indent=4)
+        json.dump(json_out, outfile, indent=4)
+
+    logger.info(f"{full_save_path} have successfully been saved.")
 
 # A function to actually handle the data
-def retrieve_listening_data(start:str, end:str, num_requests:int=NUM_REQUESTS):
-    # Qs:
-    # - Best way to parse in a date as input? E.g. "2025-01-12"
+def retrieve_listening_data(start:str, end:str):
 
-    file_path = "../data/last_fm_listening_history/"
-
+    # Converting dates into UNIX timestamps in seconds
+    start_datetime = datetime.strptime(start, date_format)
+    end_datetime = datetime.strptime(end, date_format)
     start_unix_seconds = int(
-        utc.localize(datetime.strptime(start, date_format)).timestamp()
+        utc.localize(start_datetime).timestamp()
     )
     end_unix_seconds = int(
-        utc.localize(datetime.strptime(end, date_format)).timestamp()
+        utc.localize(end_datetime).timestamp()
     )
 
+    # Retrieving months from start and end date used for the filename
+    start_str = start_datetime.strftime("%b").lower()
+    end_str = end_datetime.strftime("%b").lower()
+    file_name = f"{start}_to_{end}_{1:05d}.json" # "2025_january_to_november_00001.json"
+
+    # Set the interval to start retrieving data from
     request_parameters["start"] = start_unix_seconds
     request_parameters["end"] = end_unix_seconds
 
-    number_of_pages, response = request_helper(start, end, num_requests) # Redundant because we call the API two times at this point for the same results
-    # response = requests.get(url=BASE_URL, params=request_parameters)
+    # First GET-request to assess how many pages the overall search has.
+    # Followed by dumping the result into a .json-file.
+    num_pages, response = request_helper(start, end)
+    dump_response_to_json(
+        response=response, 
+        full_save_path=file_path+file_name
+    )
 
-    # Need to account for possible failures with API? E.g.
-    # {
-    #     "message": "Operation failed - Most likely the backend service failed. Please try again.",
-    #     "error": 8
-    # }
+    # For the remaining pages of our query, we repeat the process as done above.
+    for page in range(2, num_pages+1):
+        time.sleep(1) # Don't know how the rate limit works for the API, so I'll do this to ensure that I don't overflow it with GET-requests
 
-    # Write a function which extracts the fields from the .json file, instead of
-    # having to do this multiple times
-    file_name = f"{start}_to_{end}_1.json" # -> "2025-01-01_to_2025-12-01_X.json"
-    dump_response_to_json(response=response, full_save_path=file_path+file_name)
-    
-    # alternative: 
-    # - 2025_january_to_november_00001.json <- convert start and end to
-    # datetime, retrieve their months and concatenate.
-    
+        request_parameters["page"] = page
+        file_name = f"{start_str}_to_{end_str}_{page:05d}.json"
 
-    for page in range(2, number_of_pages+1):
-        for record in response["recentrtracks"]["track"]:
-            track_info = {
-                "artist_name": record["artist"]["#text"],
-                "artist_mbid": record["artist"]["mdib"],
-                "album_name": record["album"]["#text"],
-                "album_mbid": record["album"]["mbid"],
-                "track_name": record["name"],
-                "track_mbid": record["mbid"],
-                "date_played_unix": int(record["date"]["uts"])
-            }
-            file_name = f"{start}_to_{end}_{page}.json" 
-            json.dump(track_info, file_path+file_name)
-
-    pass
+        _, response = request_helper(start, end)
+        dump_response_to_json(
+            response=response, full_save_path=file_path+file_name
+        )
 
 if __name__ == "__main__":
     start = "2025-11-24"
