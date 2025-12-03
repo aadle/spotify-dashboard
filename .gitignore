@@ -12,3 +12,4 @@ wheels/
 # others
 .DS_Store
 secrets/
+data/
