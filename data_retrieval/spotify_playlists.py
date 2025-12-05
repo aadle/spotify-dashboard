@@ -1,23 +1,28 @@
-# Idea: 
-# This script is to get the initial library as a whole. For the future, we can
-# retrieve maybe 100 songs a month and call it quits as I rarely go over 50 songs, but
-# just in case
 import json
+import time
 import spotipy
-import time 
-import logging.config
-import logging
 import pathlib
+import logging
+import logging.config
+import os
 from spotipy.oauth2 import SpotifyOAuth
-from typing import Dict, List
+from typing import List, Dict
 
 def setup_logging():
     config_file = pathlib.Path("../logging_config/config.json")
     with open(config_file) as f_in:
         config = json.load(f_in)
+        config["handlers"]["file"]["filename"] = f"logs/{os.path.basename(__file__)}.log"
     logging.config.dictConfig(config)
 
-# helper function to get out necessary data from the response
+def helper_save_to_file(data:List, full_filepath:str) -> None:
+    with open(full_filepath, "w") as outfile:
+        for record in data:
+            json.dump(record, outfile)
+            outfile.write("\n")
+    logging.info(f"Saved {full_filepath}.")
+
+
 def helper_extract(data:Dict) -> List: # need better name
     # Extract out:
     # - ["track"]["id"] - Spotify ID for the track
@@ -42,7 +47,6 @@ def helper_extract(data:Dict) -> List: # need better name
     items = data["items"]
 
     records_out = [] 
-
     for idx, item in enumerate(items):
         track_entry = {}
         track = item["track"]
@@ -68,19 +72,23 @@ def helper_extract(data:Dict) -> List: # need better name
 
         records_out.append(track_entry)
 
-    # return dict_out
     return records_out
 
-def helper_save_to_file(data:List, full_filepath:str) -> None:
-
-    with open(full_filepath, "w") as outfile:
-        for record in data:
-            json.dump(record, outfile)
-            outfile.write("\n")
-    logging.info(f"{full_filepath} have been successfully saved.")
 
 def main():
+
     setup_logging()
+
+    PLAYLIST_NAME = "25"
+    PLAYLIST_ID = "0ovRUVQQv9ZL0jEhfokytE"
+
+    FIELDS = "next, items(added_at, track(duration_ms, id, name, popularity, album(name, id, release_date), artists.name))"
+    FILEPATH = "../data/spotify/playlists/"
+    FILENAME = PLAYLIST_NAME + "_" + PLAYLIST_ID # actual playlist name + its Spotify ID
+    LIMIT = 50 
+
+    batch_num = 1
+    offset = 0
 
     with open("../secrets/data-retriever.json") as f:
         client_json = json.load(f)
@@ -90,62 +98,46 @@ def main():
             client_id=client_json["client_id"],
             client_secret=client_json["client_secret"],
             redirect_uri="http://127.0.0.1:8000/callback",
-            scope="user-library-read")
+            scope="playlist-read-private")
+    )
+    
+    results = sp.playlist_items(
+        playlist_id=PLAYLIST_ID,
+        fields=FIELDS,
+        limit=LIMIT,
+        offset=offset,
     )
 
-    # Initial results
-    offset = 0 # 94*50 # Last page of results in my library
-    limit = 50
-
-    batch_nr = 1
-    results = sp.current_user_saved_tracks(offset=offset, limit=limit)
-
     extracted_data = helper_extract(results)
+    filename = f"{FILENAME}_{batch_num:02d}.jsonl"
+    helper_save_to_file(
+        extracted_data,
+        FILEPATH+filename
+    )
+    
+    while len(results["items"]) > 0: # or check if results["next"] is not None
+        offset += LIMIT
+        batch_num += 1
 
-    filepath = "../data/spotify/saved_songs/"
-    filename = f"spotify_library_batch_{batch_nr:03d}.jsonl"
+        results = sp.playlist_items(
+            playlist_id=PLAYLIST_ID,
+            fields=FIELDS,
+            limit=LIMIT,
+            offset=offset,
+        )
 
-    helper_save_to_file(extracted_data, filepath+filename)
-
-    while len(results["items"]) > 0:
-        offset += 50 # Increment by the limit to get to next set of songs 
-        batch_nr += 1 # Increment the batch
-
-        results = sp.current_user_saved_tracks(offset=offset, limit=limit)
-
-        # Check if returned .json has key "status".
-        if "status" in results.keys():
-            message = results["message"]
-            status_code = results["status_code"]
-            logging.critical(
-                f"""
-                Retrieval stopped due to API-error.
-                Message{message}
-                Status code: {status_code}.
-                """
-            )
-            logging.critical(f"Restart retrieval process with `offset={offset}`")
-            break
-
-        # Use helper function to retrieve the data we wish to save
         extracted_data = helper_extract(results)
+        filename = f"{FILENAME}_{batch_num:02d}.jsonl"
+        helper_save_to_file(extracted_data, FILEPATH+filename)
 
-        if len(results["items"]) == 0:
-            logging.warning("No more songs to be saved. Quitting...")
+        if results["next"] is None:
             break
 
-        # Use helper function to save the data to a .json-file.
-        filename = f"spotify_library_batch_{batch_nr:03d}.jsonl"
-        helper_save_to_file(extracted_data, filepath+filename)
-
-        if ( batch_nr % 5 ) == 0:
-            logging.info("Sleeping to not spam the API.")
+        if ( batch_num % 5 ) == 0:
             time.sleep(5)
         else:
             time.sleep(0.5)
 
+
 if __name__ == "__main__":
     main()
-
-    
-

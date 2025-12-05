@@ -9,8 +9,11 @@
 
 import json
 import logging
+import logging.config
 import requests
 import time
+import os
+import pathlib
 from pytz import utc
 from datetime import datetime
 from typing import Dict
@@ -40,11 +43,18 @@ request_parameters = {
 headers = {"user-agent": "GammelPerson_2025_data"} # identifier for the API. Recommended by the "unofficial" last.fm docs.
 
 # Logging 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger()
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s - %(levelname)s - %(message)s'
+# )
+# logger = logging.getLogger()
+
+def setup_logging():
+    config_file = pathlib.Path("../logging_config/config.json")
+    with open(config_file) as f_in:
+        config = json.load(f_in)
+        config["handlers"]["file"]["filename"] = f"logs/{os.path.basename(__file__)}.log"
+    logging.config.dictConfig(config)
 
 def request_helper() -> (int, Dict): # alt. name: send_get_request()
     
@@ -57,7 +67,6 @@ def request_helper() -> (int, Dict): # alt. name: send_get_request()
     try: # Retrieving data
         attributes = response.json()["recenttracks"]["@attr"]
         total_pages = int(attributes["totalPages"]) 
-        print(response.url)
         return total_pages, response.json()
     except KeyError:  
         # If we get a faulty response we will get a .json-file with format 
@@ -93,13 +102,15 @@ def dump_response_to_json(response:Dict, full_save_path:str):
     with open(full_save_path, "w") as outfile:
         json.dump(json_out, outfile, indent=4)
 
-    logger.info(f"{full_save_path} have successfully been saved.")
+    logging.info(f"{full_save_path} have successfully been saved.")
 
 def retrieve_listening_data(
     start:str, 
     end:str, 
     page_offset:int=1 # Offset must be set to the page which was not retrieved properly
 ):
+
+    setup_logging()
 
     # Converting dates into UNIX timestamps in seconds
     start_datetime = datetime.strptime(start, date_format)
@@ -114,7 +125,7 @@ def retrieve_listening_data(
     # Because of possible API-instability, we can provide an offset to pick up 
     # from where the API malfunctioned according to the logs.
     request_parameters["page"] = page_offset
-    logger.info(f"Starting data retrieval from page {page_offset}.")
+    logging.info(f"Starting data retrieval from page {page_offset}.")
 
     # Retrieving months from start and end date used for the filename
     start_str = start_datetime.strftime("%b").lower()
@@ -127,7 +138,7 @@ def retrieve_listening_data(
 
     # First GET-request to assess how many pages of results the period covers.
     total_pages, response = request_helper()
-    logger.info(f"Total of pages retrieved: {total_pages}.")
+    logging.info(f"Total of pages retrieved: {total_pages}.")
 
     # Followed by dumping the first page of results into a .json-file.
     dump_response_to_json(
@@ -139,7 +150,7 @@ def retrieve_listening_data(
     # We index the remaining pages of our request, and dump the results into
     # .json-files.
     for page in range(page_offset+1, total_pages+1):
-        time.sleep(0.5) # Don't know how the rate limit works for the API, so I'll do this to ensure that I don't overflow it with GET-requests
+        time.sleep(2) # Don't know how the rate limit works for the API, so I'll do this to ensure that I don't overflow it with GET-requests
 
         request_parameters["page"] = page
         file_name = f"2025_{start_str}_to_{end_str}_{page:05d}.json"
@@ -151,15 +162,15 @@ def retrieve_listening_data(
                 full_save_path=file_path+file_name
             )
         else:
-            logger.error(
+            logging.error(
                 f"No data retrieved. Restart the process with `page_offset={page}`."
             )
             break
 
         if (page % 10) == 0:
-            logger.info(f"{page} requests have been processed.")
-        elif (page % 40) == 0: # I think that the API is capped to 49 total requests of size 50.
-            logger.info(
+            logging.info(f"{page} requests have been processed.")
+        elif (page % 20) == 0: # I think that the API is capped to 49 total requests of size 50.
+            logging.info(
                 f"""
                 Sleeping to see if we can retrieve more data before the API terminates our request. 
                 Currently on page {page}.
@@ -170,8 +181,8 @@ def retrieve_listening_data(
 
 if __name__ == "__main__":
     start = "2025-01-01"
-    end = "2025-07-01"
-    page_offset = 1
+    end = "2025-12-01"
+    page_offset = 1003 # HAR IKKE KJØRT 1003
 
     retrieve_listening_data(start=start, end=end, page_offset=page_offset)
     # time.sleep(2)
@@ -181,4 +192,4 @@ if __name__ == "__main__":
     # save_path = "../data/last_fm/listening_history/test.json"
     # dump_response_to_json(response=response, full_save_path=save_path)
 
-
+# Retry mechanism would be huge, e.g. try three times. Reset if it works.

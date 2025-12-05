@@ -13,3 +13,6 @@ wheels/
 .DS_Store
 secrets/
 data/
+
+.cache
+.cache/
