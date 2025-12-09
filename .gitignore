@@ -13,6 +13,17 @@ wheels/
 .DS_Store
 secrets/
 data/
-
+data_retrieval/logs
 .cache
 .cache/
+.env
+
+airflow/*
+!airflow/dags/
+
+# Local .terraform directories
+terraform/*
+!terraform/main.tf
+
+# Local PostgreSQL DB
+local_pgsql_db/
