@@ -18,9 +18,9 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from pathlib import Path
 
 postgres_conn_id = "local_db"
-hook = PostgresHook(postgres_conn_id=postgres_conn_id)
-conn = hook.get_conn()
-cur = conn.cursor()
+# hook = PostgresHook(postgres_conn_id=postgres_conn_id)
+# conn = hook.get_conn()
+# cur = conn.cursor()
 
 SAVED_SONGS_DIR = "data/spotify/saved_songs"
 directory = Path(SAVED_SONGS_DIR)

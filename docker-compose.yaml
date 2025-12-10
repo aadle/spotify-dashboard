@@ -117,6 +117,7 @@ services:
       - "./local_pgsql_db:/var/lib/postgresql/data"
     ports:
       - "5432:5432"
+    restart: always
 
   redis:
     # Redis is limited to 7.2-bookworm due to licencing change
