@@ -72,7 +72,6 @@ def helper_extract(data:Dict) -> List: # need better name
     return records_out
 
 def helper_save_to_file(data:List, full_filepath:str) -> None:
-
     with open(full_filepath, "w") as outfile:
         for record in data:
             json.dump(record, outfile)
