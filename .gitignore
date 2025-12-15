@@ -27,3 +27,7 @@ terraform/*
 
 # Local PostgreSQL DB
 local_pgsql_db/
+
+# Apache Superset
+superset/*
+

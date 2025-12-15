@@ -1,11 +1,5 @@
-# TODO:
-# - [ ] Need to account for possible failures with API? E.g.
-    # {
-    #     "message": "Operation failed - Most likely the backend service failed. Please try again.",
-    #     "error": 8
-    # }
-# - [ ] For logging, save logs somewhere
-
+# 2025-12-15: The script actually retrieved all data available, not restricted
+# by the interval set.
 
 import json
 import logging
@@ -180,7 +174,7 @@ def retrieve_listening_data(
 
 
 if __name__ == "__main__":
-    start = "2025-01-01"
+    start = "2025-01-01" 
     end = "2025-12-01"
     page_offset = 1003 # HAR IKKE KJØRT 1003
 
