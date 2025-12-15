@@ -22,7 +22,7 @@ postgres_conn_id = "local_db"
 # conn = hook.get_conn()
 # cur = conn.cursor()
 
-SAVED_SONGS_DIR = "data/spotify/saved_songs"
+SAVED_SONGS_DIR = "data/spotify/saved_songs_incl_artist_ids"
 directory = Path(SAVED_SONGS_DIR)
 
 def standardize_date(date_str):
@@ -31,7 +31,9 @@ def standardize_date(date_str):
     'year', 'month' and 'day' – which can mess up the ingestion process when
     data is loaded into PostgreSQL with data type DATE. To fix this
     ambiguity in precision I check the precision of the date string and adjust it
-    accordingly. If only the year is known, we set the date to the 1st of January of
+    accordingly. If year and month is known, we set the date to the 1st of that
+    month.
+    If only the year is known, we set the date to the 1st of January of
     that year.
     """
     date_str = date_str.strip()
@@ -74,15 +76,18 @@ def SavedSongsToPostgres():
                 track_id TEXT,
                 track_name TEXT,
                 main_artist TEXT,
+                main_artist_id TEXT,
                 featured_artists TEXT[],
+                featured_artists_ids TEXT[],
                 track_duration_ms INTEGER,
                 album_name TEXT,
                 album_id TEXT,
                 album_release_date DATE,
-                added_at TIMESTAMP WITH TIME ZONE
+                added_at TIMESTAMP WITH TIME ZONE,
+                track_popularity INTEGER
             );
         """
-    )
+    ) # replace TEXT[] with JSONB
 
     create_staging_table = SQLExecuteQueryOperator(
         task_id = "create_temp_table",
@@ -93,15 +98,18 @@ def SavedSongsToPostgres():
                 track_id TEXT,
                 track_name TEXT,
                 main_artist TEXT,
+                main_artist_id TEXT,
                 featured_artists TEXT[],
+                featured_artists_ids TEXT[],
                 track_duration_ms INTEGER,
                 album_name TEXT,
                 album_id TEXT,
                 album_release_date DATE,
-                added_at TIMESTAMP WITH TIME ZONE
+                added_at TIMESTAMP WITH TIME ZONE,
+                track_popularity INTEGER
             );
         """
-    )
+    ) 
 
     
     @task
@@ -110,15 +118,25 @@ def SavedSongsToPostgres():
         
         insert_statement = """
             INSERT INTO temp_saved_songs (
-                track_id, track_name, main_artist, featured_artists, added_at,
-                track_duration_ms, album_name, album_release_date, album_id
+                track_id, track_name, main_artist, 
+                main_artist_id, featured_artists, featured_artists_ids, 
+                added_at, track_duration_ms, album_name, 
+                album_release_date, album_id, track_popularity
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);
+            VALUES (
+                %s,%s,%s,
+                %s,%s,%s,
+                %s,%s,%s,
+                %s,%s,%s
+            );
         """ # Insert statement must match order of appearance in .jsonl-files
 
         for file in directory.iterdir(): # Load directory containing .jsonl-files
             if file.is_file():
                 print(file)
+
+            if file.name.startswith('.') or file.suffix != '.json':
+                continue
 
             # Read the .jsonl-file
             with open(file) as input_file:
@@ -127,9 +145,7 @@ def SavedSongsToPostgres():
             # Loop over records in the .jsonl-file 
             for doc in docs:
                 record_out = json.loads(doc)
-
                 record_out["album_release_date"] = standardize_date(record_out["album_release_date"])
-
                 postgres_hook.run(
                     insert_statement,
                     parameters=list(record_out.values())

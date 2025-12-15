@@ -1,16 +1,20 @@
 # 2025-12-15: The script actually retrieved all data available, not restricted
 # by the interval set.
 
+import sys
+import pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+
 import json
 import logging
 import logging.config
 import requests
 import time
-import os
-import pathlib
 from pytz import utc
 from datetime import datetime
 from typing import Dict
+
+from local_utils.logging import setup_logging, get_current_filename
 
 with open("../secrets/lastfm.json") as f:
     api_credentials = json.load(f) 
@@ -35,20 +39,6 @@ request_parameters = {
     "page": 1 # we start indexing from page 1, 2, ...
     }
 headers = {"user-agent": "GammelPerson_2025_data"} # identifier for the API. Recommended by the "unofficial" last.fm docs.
-
-# Logging 
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s - %(levelname)s - %(message)s'
-# )
-# logger = logging.getLogger()
-
-def setup_logging():
-    config_file = pathlib.Path("../logging_config/config.json")
-    with open(config_file) as f_in:
-        config = json.load(f_in)
-        config["handlers"]["file"]["filename"] = f"logs/{os.path.basename(__file__)}.log"
-    logging.config.dictConfig(config)
 
 def request_helper() -> (int, Dict): # alt. name: send_get_request()
     
@@ -104,7 +94,8 @@ def retrieve_listening_data(
     page_offset:int=1 # Offset must be set to the page which was not retrieved properly
 ):
 
-    setup_logging()
+    current_filename = get_current_filename()
+    setup_logging(current_filename)
 
     # Converting dates into UNIX timestamps in seconds
     start_datetime = datetime.strptime(start, date_format)

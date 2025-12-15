@@ -2,84 +2,23 @@
 # This script is to get the initial library as a whole. For the future, we can
 # retrieve maybe 100 songs a month and call it quits as I rarely go over 50 songs, but
 # just in case
+import sys
+import pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+
 import json
 import spotipy
 import time 
-import logging.config
 import logging
-import pathlib
 from spotipy.oauth2 import SpotifyOAuth
-from typing import Dict, List
-
-def setup_logging():
-    config_file = pathlib.Path("../logging_config/config.json")
-    with open(config_file) as f_in:
-        config = json.load(f_in)
-    logging.config.dictConfig(config)
-
-# helper function to get out necessary data from the response
-def helper_extract(data:Dict) -> List: # need better name
-    # Extract out:
-    # - ["track"]["id"] - Spotify ID for the track
-
-    # - ["track"]["name"] - track name
-    # - ["track"]["artists"]["name"] - DETTE ER EN LISTE!!!
-        # - artist: [0] er hovedartist
-            # if len() > 0
-            # - features: [1:] indekser utover er features
-            # else:
-            # - features = [""]
-
-    # - ["added_at"] - timestamp when track was added
-    # - ["track"]["duration_ms"] - duration in ms
-
-    # - ["track"]["album"]["name"] - Album name
-    # - ["track"]["album"]["release_date"] - Release date of album
-    # - ["track"]["album"]["id"] - Spotify ID for album
-    # - 
-    # - ["track"]["popularity"] - fluctuating popularity metric 
-
-    items = data["items"]
-
-    records_out = [] 
-
-    for idx, item in enumerate(items):
-        track_entry = {}
-        track = item["track"]
-
-        track_entry["track_id"] = track["id"]
-
-        track_entry["track_name"] = track["name"]
-        track_entry["main_artist"] = track["artists"][0]["name"]
-
-        if len(track["artists"]) > 1:
-            track_entry["featured_artists"] = [
-                feature["name"] for feature in track["artists"][1:]
-            ]
-        else:
-            track_entry["featured_artists"] = None
-
-        track_entry["added_at"] = item["added_at"]
-        track_entry["duration_ms"] = track["duration_ms"]
-
-        track_entry["album_name"] = track["album"]["name"]
-        track_entry["album_release_date"] = track["album"]["release_date"]
-        track_entry["album_id"] = track["album"]["id"]
-
-        records_out.append(track_entry)
-
-    # return dict_out
-    return records_out
-
-def helper_save_to_file(data:List, full_filepath:str) -> None:
-    with open(full_filepath, "w") as outfile:
-        for record in data:
-            json.dump(record, outfile)
-            outfile.write("\n")
-    logging.info(f"{full_filepath} have been successfully saved.")
+from local_utils.logging import setup_logging, get_current_filename
+from local_utils.loading import save_to_jsonl
+from local_utils.spotify import extract_track_data 
 
 def main():
-    setup_logging()
+
+    filename = get_current_filename()
+    setup_logging(filename)
 
     with open("../secrets/data-retriever.json") as f:
         client_json = json.load(f)
@@ -99,12 +38,16 @@ def main():
     batch_nr = 1
     results = sp.current_user_saved_tracks(offset=offset, limit=limit)
 
-    extracted_data = helper_extract(results)
+    extracted_data = extract_track_data(results)
 
-    filepath = "../data/spotify/saved_songs/"
+    filepath = "../data/spotify/saved_songs_incl_artist_ids/"
     filename = f"spotify_library_batch_{batch_nr:03d}.jsonl"
 
-    helper_save_to_file(extracted_data, filepath+filename)
+    dir_path = pathlib.Path(filepath)
+    if not dir_path.exists():
+        dir_path.mkdir()
+
+    save_to_jsonl(extracted_data, filepath+filename)
 
     while len(results["items"]) > 0:
         offset += 50 # Increment by the limit to get to next set of songs 
@@ -123,19 +66,19 @@ def main():
                 Status code: {status_code}.
                 """
             )
-            logging.critical(f"Restart retrieval process with `offset={offset}`")
+            logging.critical(f"Restart the retrieval process with `offset={offset}`")
             break
-
-        # Use helper function to retrieve the data we wish to save
-        extracted_data = helper_extract(results)
 
         if len(results["items"]) == 0:
             logging.warning("No more songs to be saved. Quitting...")
             break
 
+        # Use helper function to retrieve the data we wish to save
+        extracted_data = extract_track_data(results)
+
         # Use helper function to save the data to a .json-file.
         filename = f"spotify_library_batch_{batch_nr:03d}.jsonl"
-        helper_save_to_file(extracted_data, filepath+filename)
+        save_to_jsonl(extracted_data, filepath+filename)
 
         if ( batch_nr % 5 ) == 0:
             logging.info("Sleeping to not spam the API.")

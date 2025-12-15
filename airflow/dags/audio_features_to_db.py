@@ -7,7 +7,7 @@ from pathlib import Path
 
 postgres_conn_id = "local_db"
 
-AUDIO_FEATURES_DIR = "data/reccobeats"
+AUDIO_FEATURES_DIR = "data/reccobeats/audio_features/"
 directory = Path(AUDIO_FEATURES_DIR)
 
 # Defining the dag
@@ -23,6 +23,7 @@ def SavedAudioFeaturesToPostgres():
             DROP TABLE IF EXISTS audio_features;
             CREATE TABLE IF NOT EXISTS audio_features (
                 reccobeats_id TEXT,
+                isrc TEXT,
                 acousticness FLOAT,
                 danceability FLOAT,
                 energy FLOAT,
@@ -48,6 +49,7 @@ def SavedAudioFeaturesToPostgres():
             DROP TABLE IF EXISTS temp_audio_features;
             CREATE TABLE IF NOT EXISTS temp_audio_features (
                 reccobeats_id TEXT,
+                isrc TEXT,
                 acousticness FLOAT,
                 danceability FLOAT,
                 energy FLOAT,
@@ -68,12 +70,13 @@ def SavedAudioFeaturesToPostgres():
 
     
     @task
-    def load_saved_songs():
+    def load_audio_features():
         postgres_hook = PostgresHook(postgres_conn_id=postgres_conn_id)
         
         insert_statement = """
             INSERT INTO temp_audio_features (
                 reccobeats_id,
+                isrc,
                 acousticness,
                 danceability,
                 energy,
@@ -92,12 +95,16 @@ def SavedAudioFeaturesToPostgres():
             VALUES (
                 %s,%s,%s,%s,%s,
                 %s,%s,%s,%s,%s,
-                %s,%s,%s,%s,%s
+                %s,%s,%s,%s,%s,
+                %s
             );
         """ # Insert statement must match order of appearance in .jsonl-files
 
         for file in directory.iterdir(): # Load directory containing .jsonl-files
             # Read the .jsonl-file
+            # if file.name.startswith('.') or file.suffix != '.json':
+            #     continue
+
             with open(file) as input_file:
                 docs = input_file.readlines()
 
@@ -114,6 +121,6 @@ def SavedAudioFeaturesToPostgres():
     def staging_to_final_table():
         pass
 
-    [ create_staging_table, create_main_table ] >> load_saved_songs()
+    [ create_staging_table, create_main_table ] >> load_audio_features()
 
 SavedAudioFeaturesToPostgres()

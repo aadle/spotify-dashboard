@@ -68,7 +68,7 @@ def get_audio_features(track_id_list:List[str]) -> List[Dict] | None:
 def main():
     setup_logging()
     # Create a ReccoBeats folder 
-    save_dir = "../data/reccobeats/"
+    save_dir = "../data/reccobeats/audio_features/"
     dir_path = Path(save_dir)
     if not dir_path.exists():
         dir_path.mkdir()
@@ -108,7 +108,7 @@ def main():
         track_batch = track_ids[track_idx:track_idx+batch_size]
         audio_features = get_audio_features(track_batch)
 
-        if audio_features is not None:
+        if audio_features:
             # Augmenting "main_artist" and "track_name" to the results
             for record in audio_features:
                 track_id = record["track_id"]
@@ -118,7 +118,7 @@ def main():
 
             dump_to_jsonl(audio_features, save_dir+filename)
         else:
-            logging.warning("No audio features found for the batch of tracks.")
+            logging.warning(f"No audio features found for batch {idx} of tracks.")
 
         time.sleep(1)
 
