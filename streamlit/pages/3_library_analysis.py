@@ -26,4 +26,11 @@ with st.container():
         fig_genre_dist = plot_genre_distribution(df_genres)
         st.plotly_chart(fig_genre_dist)
 
-st.subheader("INSERT GRAPH OF ARTIST RELATIONSHIPS HERE", text_alignment="center")
+# st.subheader("INSERT GRAPH OF ARTIST RELATIONSHIPS HERE", text_alignment="center")
+
+st.divider()
+
+st.subheader("Artist relations in my library")
+with st.container():
+    htmlfile = open("html/artist_network.html", 'r', encoding='utf-8')
+    st.components.v1.html(htmlfile.read(), height=700)

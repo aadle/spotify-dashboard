@@ -6,10 +6,6 @@ st.set_page_config(
     page_icon="🐶",
     )
 
-# st.title("Ttiel")
-
-# filter data to "year" only
-
 df = st.session_state["listening"]
 
 with st.container():
@@ -26,8 +22,9 @@ with st.container():
     with col11:
         fig = unknown_pleasures(df_weekly_freq)
         st.plotly_chart(fig, 
-                        width=350, # width is editable here, height is editable in unknown_pleasures
+                        width=350, # width is editable here, height is editable in unknown_pleasures()
                         config = {'scrollZoom': False},)
+        
 
     with col12:
         grouped_hour = df_weekly_freq.groupby("hour", as_index=False)["freq"].sum()
@@ -40,9 +37,11 @@ with st.container():
         
         # st.dataframe(grouped_week)
         st.subheader(
-            f"Your peak listening time is {peak_hour_formatted}. Week {peak_week} is the most scrobbled week of {year}, with *{n_scrobbles}* scrobbles.",
+            f"My peak listening time was {peak_hour_formatted}. Week {peak_week} is my the most scrobbled week of {year}, with *{n_scrobbles}* scrobbles.",
             text_alignment="center",
         )
+        st.markdown(":small[I've seen pattern on a t-shirt before...]",
+                    text_alignment="center")
 
         if year==2021:
             st.markdown(

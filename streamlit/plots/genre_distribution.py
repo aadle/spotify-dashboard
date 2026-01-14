@@ -8,7 +8,7 @@ def plot_genre_distribution(df:pd.DataFrame):
                  x="genres", 
                  y="freq", 
                  hover_data="popular_artists_in_library",
-                 title="Genre distribution in my library",
+                 title="Genre distribution",
                  )
     fig.update_traces(marker_color="#4CA083")
     return fig

@@ -175,19 +175,6 @@ def yearly_distribution_fig(df:pd.DataFrame, year:int, top_n:int=5):
             ay=-100,
         )
 
-        # Snow Strippers mania after CPH
-        fig_dist.add_annotation(
-            x="2024-06",
-            y=df_dist.query("listened_at == '2024-06'")["size"].values[0],
-            text="""
-            Got hooked on Snow Strippers<br> 
-            after a great show in Copenhagen!!
-            """,
-            showarrow=True,
-            ax=-30,
-            ay=-100,
-        )
-
         # Surprise release by Bladee with "COLD VISIONS"
         fig_dist.add_annotation(
             x="2024-05",
@@ -199,6 +186,41 @@ def yearly_distribution_fig(df:pd.DataFrame, year:int, top_n:int=5):
             showarrow=True,
             ax=-40,
             ay=-90,
+        )
+
+        # Snow Strippers mania after CPH
+        fig_dist.add_annotation(
+            x="2024-06",
+            y=df_dist.query("listened_at == '2024-06'")["size"].values[0],
+            text="""
+            Got hooked on Snow Strippers<br> 
+            after a great show in Copenhagen!! <br>
+            Faye Webster as well in CPH
+            """,
+            showarrow=True,
+            ax=-30,
+            ay=-100,
+        )
+
+        fig_dist.add_annotation(
+            x="2024-08",
+            y=df_dist.query("listened_at == '2024-08'")["size"].values[0],
+            text="ØYA",
+            showarrow=True,
+            ax=-40,
+            ay=-50,
+        )
+
+    if year==2023:
+        fig_dist.add_annotation(
+            x="2023-08",
+            y=df_dist.query("listened_at == '2023-08'")["size"].values[0],
+            text="""
+            Gæste Gutter på Parkteateret
+            """,
+            showarrow=True,
+            ax=-40,
+            ay=-100,
         )
 
     return fig_dist

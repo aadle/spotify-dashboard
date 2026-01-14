@@ -13,7 +13,6 @@ with st.container(horizontal=True):
         width=100,
         label_visibility="collapsed",
     ) 
-
     top_n = 25
     df_ta = ta.data_setup(df_listening, year, top_n)
     df_tsp = tsp.data_setup(df_listening, year, top_n)
@@ -30,14 +29,7 @@ with st.container():
         genre_fig = ta.plot_top_artists(df_ta, year, top_n)
         st.plotly_chart(genre_fig, height=600)
 
-        if year==2024:
-            st.markdown("Rare Bladee dethrone.")
-
     with col12:
-        # st.image(
-        #     "imgs/veruschka-poesia-di-una-donna.jpg",
-        #     caption="poop"
-        # )
         artist_fig = tsp.plot_top_artists_and_songs(df_tsp, year, top_n)
         st.plotly_chart(artist_fig, height=600)
 
@@ -49,11 +41,10 @@ with st.container():
 
     fig = ldy.yearly_distribution_fig(df_ldy, year, 10)
     st.plotly_chart(fig, height=600)
-
-    st.subheader(f"{df_ldy.shape[0]} total tracks played in {year}.",
+    st.markdown(":small[ *Hover over the bars to get the top 10 played songs of that month* ]")
+    st.subheader(f"{df_ldy.shape[0]} total tracks played in {year}",
                 text_alignment="center")
-    st.markdown(":small[ *(Hover over the bars to get the top 10 played songs of that month)* ]",
-                text_alignment="center")
+    
 
     if year==2025:
         st.markdown(
@@ -68,30 +59,3 @@ with st.container():
             podcast listening which is not accounted for in the Last.fm data. 
             """
         )
-    
-    # st.markdown("*Suggestion: We can add annotations + the most played song of the month as data to present. In other words, most played songs and probably context behind*")
-    #
-    # st.dataframe(df_ldy)
-
-    # st.divider()
-    # st.subheader("Woah")
-    
-    # st.markdown(
-    #     """
-    #     Going to concerts and festivals definetly influence my listening
-    #     throughout the year.
-    #     2024:
-    #     * Dina Ögon
-    #     * The Jesus and Mary Chain
-    #     * Snow Strippers
-    #     * Danny Brown
-    #     * Faye Webster
-    #
-    #     * Tøyen Holding (Øya)
-    #     * Cezinando (Øya) 
-    #     * Overmono (Øya) 
-    #     * Slowdive (Øya)
-    #     * Big Thief (Øya) 
-    #     * Arca (Øya)
-    #     """
-    # )
