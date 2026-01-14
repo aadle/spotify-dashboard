@@ -18,6 +18,7 @@ data_retrieval/logs
 .cache/
 .env
 
+# Airflow
 airflow/*
 !airflow/dags/
 
@@ -28,6 +29,5 @@ terraform/*
 # Local PostgreSQL DB
 local_pgsql_db/
 
-# Apache Superset
-superset/*
-
+# Notebooks
+notebooks/*
