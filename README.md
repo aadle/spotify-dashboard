@@ -10,16 +10,28 @@ viser lyttermønstrene i perioden 2021-2025 med utgangspunkt i to tilgjengelige 
 ## Funksjonalitet
 
 - Airflow DAGs for å hente ut, transformere og laste inn data inn i min lokale PostgreSQL
-database.
+  database.
 - Forsøkte å lage et "Unknown Pleasures" inspirert plot av lytteaktivitet i løpet av døgnene i
-en uke.
+  en uke.
 - Mer som en måte for meg å se hvordan musikksmaken endrer seg fra år til år, og fra måned til
-måned.
+  måned.
 - Lyttefordelingen utover året fungerer litt som en tidslinje med minner for å se hva som har påvirket lyttingen
-for hver måned.
+  for hver måned.
 - Se hva slags type musikk som overtak blant mine likte sanger, både med tanke på sjanger men
-også 'audio artists'.
+  også 'audio artists'.
 - Nettverksdiagram med oversikt over hvilke artister som har jobbet med hverandre i biblioteket mitt.
+
+### Bilder
+
+![Unknown Pleasures](imgs/joy_division.png)
+
+![Årlig recap](imgs/artist_song_recap.png)
+
+![Månedlig lyttefordeling](imgs/music_consumption_timeline.png)
+
+![Analyse av biblioteket](imgs/music_consumption_timeline.png)
+
+![Artistnettverk](imgs/artist_network.png)
 
 ## Hva har jeg lært?
 

@@ -27,14 +27,14 @@ with st.container():
     
     with col11:
         genre_fig = ta.plot_top_artists(df_ta, year, top_n)
-        st.plotly_chart(genre_fig, height=600)
+        st.plotly_chart(genre_fig, height=700)
 
     with col12:
         artist_fig = tsp.plot_top_artists_and_songs(df_tsp, year, top_n)
-        st.plotly_chart(artist_fig, height=600)
+        st.plotly_chart(artist_fig, height=700)
 
-    st.markdown(":small[*Possibility to get favorite genre based on artists*]",
-                text_alignment="center")
+    # st.markdown(":small[*Possibility to get favorite genre based on artists*]",
+    #             text_alignment="center")
 
     st.markdown("",text_alignment="center")
 
