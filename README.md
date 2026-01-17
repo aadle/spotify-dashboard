@@ -29,7 +29,7 @@ viser lyttermønstrene i perioden 2021-2025 med utgangspunkt i to tilgjengelige 
 
 ![Månedlig lyttefordeling](imgs/music_consumption_timeline.png)
 
-![Analyse av biblioteket](imgs/music_consumption_timeline.png)
+![Analyse av biblioteket](imgs/library_analysis.png)
 
 ![Artistnettverk](imgs/artist_network.png)
 
