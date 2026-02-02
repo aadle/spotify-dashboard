@@ -155,7 +155,7 @@ def yearly_distribution_fig(df:pd.DataFrame, year:int, top_n:int=5):
             y=df_dist.query("listened_at == '2025-11'")["size"].values[0],
             text="""
             Bassvictim, Evita Manji, <br>
-            FAKETHIAS & Valeria Litvakov live!,
+            FAKETHIAS & Valeria Litvakov live!
             """,
             showarrow=True,
             ax=40,
@@ -168,7 +168,7 @@ def yearly_distribution_fig(df:pd.DataFrame, year:int, top_n:int=5):
             x="2024-02",
             y=df_dist.query("listened_at == '2024-02'")["size"].values[0],
             text="""
-            mk.gee releases 'Two Star & The Dream Police'
+            Mk.gee releases 'Two Star & The Dream Police'
             """,
             showarrow=True,
             ax=-40,
@@ -216,12 +216,25 @@ def yearly_distribution_fig(df:pd.DataFrame, year:int, top_n:int=5):
             x="2023-08",
             y=df_dist.query("listened_at == '2023-08'")["size"].values[0],
             text="""
-            Gæste Gutter på Parkteateret
+            Gæste Gutter at Parkteateret, <br>
+            ØYA
             """,
             showarrow=True,
             ax=-40,
             ay=-100,
         )
+
+    # if year==2021:
+    #     fig_dist.add_annotation(
+    #         x="2022-03",
+    #         y=df_dist.query("listened_at == '2021-03'")["size"].values[0],
+    #         text="""
+    #         Yung Lean at Sentrum Scene
+    #         """,
+    #         showarrow=True,
+    #         ax=-40,
+    #         ay=-100,
+    #     )
 
     return fig_dist
 

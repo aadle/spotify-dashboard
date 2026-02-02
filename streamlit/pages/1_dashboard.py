@@ -37,7 +37,7 @@ with st.container():
         
         # st.dataframe(grouped_week)
         st.subheader(
-            f"My peak listening time was {peak_hour_formatted}. Week {peak_week} is my the most scrobbled week of {year}, with *{n_scrobbles}* scrobbles.",
+            f"Your peak listening time was {peak_hour_formatted}. Week {peak_week} is the most scrobbled week of {year}, with *{n_scrobbles}* scrobbles.",
             text_alignment="center",
         )
         st.markdown(":small[I've seen pattern on a t-shirt before...]",

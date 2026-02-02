@@ -33,6 +33,8 @@ with st.container():
         artist_fig = tsp.plot_top_artists_and_songs(df_tsp, year, top_n)
         st.plotly_chart(artist_fig, height=700)
 
+    st.subheader(f"{df_ldy.shape[0]} total tracks played in {year}",
+                text_alignment="center")
     # st.markdown(":small[*Possibility to get favorite genre based on artists*]",
     #             text_alignment="center")
 
@@ -42,8 +44,6 @@ with st.container():
     fig = ldy.yearly_distribution_fig(df_ldy, year, 10)
     st.plotly_chart(fig, height=600)
     st.markdown(":small[ *Hover over the bars to get the top 10 played songs of that month* ]")
-    st.subheader(f"{df_ldy.shape[0]} total tracks played in {year}",
-                text_alignment="center")
     
 
     if year==2025:

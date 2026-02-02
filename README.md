@@ -1,8 +1,9 @@
 # Spotify lyttedashboard
 
 Jeg startet dette lille prosjektet på bakgrunn av at jeg ville lære meg `Airflow` for
-ETL-prosesser og bygge et dataprodukt ut ifra dataen. I denne omgang ble det et dataprodukt som
-viser lyttermønstrene i perioden 2021-2025 med utgangspunkt i to tilgjengelige datakilder:
+ETL-prosesser og bygge et dataprodukt ut ifra data jeg har tilgang til. I denne omgang ble det
+et dataprodukt som viser lyttermønstrene i perioden 2021-2025 med utgangspunkt i to
+tilgjengelige datakilder:
 
 1. Scrobbling-data fra Last.fm brukeren min, og
 2. "Saved Songs/Likte Sanger" spillelisten på Spotify.
@@ -11,14 +12,14 @@ viser lyttermønstrene i perioden 2021-2025 med utgangspunkt i to tilgjengelige 
 
 - Airflow DAGs for å hente ut, transformere og laste inn data inn i min lokale PostgreSQL
   database.
-- Forsøkte å lage et "Unknown Pleasures" inspirert plot av lytteaktivitet i løpet av døgnene i
-  en uke.
+- Forsøkte å lage et ["Unknown Pleasures"](https://jaegeroslo.no/wp-content/uploads/2016/07/1358802459_joy-division_unknown-pleasures_shes-lost-control-1979.jpg)
+  inspirert figur som viser lytteaktivitet i løpet av døgntimene for hver uke.
 - Mer som en måte for meg å se hvordan musikksmaken endrer seg fra år til år, og fra måned til
   måned.
 - Lyttefordelingen utover året fungerer litt som en tidslinje med minner for å se hva som har påvirket lyttingen
   for hver måned.
-- Se hva slags type musikk som overtak blant mine likte sanger, både med tanke på sjanger men
-  også 'audio artists'.
+- Se hva slags type musikk som har overtak blant mine likte sanger, både med tanke på sjanger
+  men også 'audio artists'.
 - Nettverksdiagram med oversikt over hvilke artister som har jobbet med hverandre i biblioteket mitt.
 
 ### Bilder
@@ -37,8 +38,8 @@ viser lyttermønstrene i perioden 2021-2025 med utgangspunkt i to tilgjengelige 
 
 - Erfart og undervurdert hvor utfordrende det kan være å jobbe med forskjellige men høyst
   relaterte datakilder.
-- Bruke `uv` for å lage lokale packages for å lage scripts for gjenbruk i flere deler av koden.
-- Airflow for orkestrering av ETL-prosesser.
+- Bruke `uv` for å lage lokale packages for å lett gjenbruke scripts ved flere deler av koden.
+- `Airflow` for orkestrering av ETL-prosesser.
 - Oppsett av Airflow med Docker på lokal maskin.
 - Bruk av Pythons `logging`-bibliotek.
 
@@ -58,6 +59,9 @@ Analysen kan utvides til å ta fatt på albumene jeg har lagret i biblioteket el
 jeg har tilgjengelig.
 
 Og så klart kan man drive å refactore store deler av koden også...
+
+Jeg ser også for meg at man kan kutte ut mye av `pandas` bruken og heller bruke SQL queries for
+transformeringen av data.
 
 Sist men ikke minst: å deploye dashboardet!
 
