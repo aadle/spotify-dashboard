@@ -35,10 +35,13 @@ st.session_state["audio_features"] = df_af
 
 # st.dataframe(df)
 
-page_1 = st.Page("pages/1_dashboard.py", title="Joy Division Reference")
-page_2 = st.Page("pages/2_annual_listening.py", title="Annual Listening")
-page_3 = st.Page("pages/3_library_analysis.py", title="Library Analysis")
-pages = [page_1, page_2, page_3]
+page_1 = st.Page("pages/1_dashboard.py", title="joy division reference")
+page_2 = st.Page("pages/2_annual_listening.py", title="annual listening")
+page_3 = st.Page("pages/3_library_analysis.py", title="library analysis")
+page_4 = st.Page("pages/4_weekly_overview.py", title="weekly overview")
+page_5 = st.Page("pages/5_monthly_overview.py", title="monthly overview")
+page_6 = st.Page("pages/6_cumulative_listening.py", title="listening trends")
+pages = [page_1, page_2, page_3, page_4, page_5, page_6]
 pg = st.navigation(pages)
 
 

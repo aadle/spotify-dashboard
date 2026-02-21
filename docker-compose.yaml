@@ -81,8 +81,9 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/airflow/config:/opt/airflow/config # - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/airflow/plugins:/opt/airflow/plugins # - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
 
-    # Local data folder we want to be able to access in Airflow
-    - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data # Data folder
+    # Local volumes accessible to Airflow
+    - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data # data folder we want to be able to access in Airflow
+    - ${AIRFLOW_PROJ_DIR:-.}/secrets/lastfm:/opt/airflow/secrets/lastfm #
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     redis:

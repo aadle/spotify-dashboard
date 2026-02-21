@@ -123,7 +123,6 @@ def yearly_distribution_fig(df:pd.DataFrame, year:int, top_n:int=5):
             ay=-70,
         )
         
-
         fig_dist.add_annotation(
             x="2025-06",
             y=df_dist.query("listened_at == '2025-06'")["size"].values[0],

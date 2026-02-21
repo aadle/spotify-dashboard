@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime, timezone
 from utils.retrieval import get_listening_data
@@ -66,10 +67,14 @@ def data_setup(df:pd.DataFrame, year:int):
     # Normalize frequency of tracks played each hour of the week. This is the
     # data which we plot
     df_weekly_freq["norm_freq"] = df_weekly_freq.groupby("week")["freq"].transform(
-        lambda x: (x - x.min()) / (x.max() - x.min() + 1e-10)
+        lambda x: (x - x.min()) / (x.max() - x.min() + 1e-6)
         if x.max() > x.min()
         else x
     )
+    df_weekly_freq["norm_freq"] = df_weekly_freq["norm_freq"].apply(
+        lambda x: np.exp(x)
+    )
+
     # Format the hour stamps.
     df_weekly_freq["hour_formatted"] = df_weekly_freq["hour"].apply(
         lambda x: f"{x:02d}:00"
