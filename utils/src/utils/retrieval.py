@@ -46,7 +46,7 @@ def get_table_data(table_name: str, query: str = None) -> List[Tuple]:
 def get_listening_data() -> pd.DataFrame:
     listening_data_lastfm = get_table_data(
         table_name="temp_listening_history",
-        query="SELECT artist_name, track_name, listened_at FROM temp_listening_history;"
+        query="SELECT artist_name, track_name, listened_at FROM listening_history;"
     ) 
     df_listening = pd.DataFrame.from_records(listening_data_lastfm)
 

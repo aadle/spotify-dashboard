@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
+import psycopg2
+
 
 # Utils
 def filter_dataframe(df:pd.DataFrame, year:int, month:int) -> pd.DataFrame:
@@ -7,6 +10,11 @@ def filter_dataframe(df:pd.DataFrame, year:int, month:int) -> pd.DataFrame:
     df_filtered = df_filtered.loc[df["month"] == month]
 
     return df_filtered.sort_values("listened_at", axis=0, ascending=True)
+
+conn = psycopg2.connect(
+        database="music", user="music", password="music", host="localhost"
+    )
+cur = conn.cursor()
 
 # Page
 st.title("monthly summary")
@@ -17,7 +25,7 @@ df_listening["month"] = df_listening["listened_at"].dt.month
 with st.container(horizontal=True):
     year = st.selectbox(
         "Year",
-        options=[x for x in range(2021, 2025+1)][::-1],
+        options=[x for x in range(2021, 2026+1)][::-1],
         width=100,
     )
 
@@ -35,12 +43,13 @@ with st.container(horizontal=True):
         11: "November",
         12: "December",
     }
+    current_month = datetime.today().month
     month = st.selectbox(
         "Month",
         options=list(months.keys()),
         format_func=lambda x: months[x],
         width=150,
-        index=0
+        index=current_month-1
     )
     
 df_current = filter_dataframe(df_listening, year, month)
@@ -52,18 +61,41 @@ df_top_artists = df_current[["artist_name"]].groupby(
     ).agg(num_plays=("artist_name", "count"))
 df_top_artists = df_top_artists.sort_values(["num_plays"], ascending=False).reset_index(drop=True)
 
+img_dict = {}
+top_artist = df_top_artists.iloc[0, :].artist_name
+
 # Most listened tracks
 df_top_tracks = df_current[["artist_name", "track_name"]].groupby(
         ["artist_name", "track_name"], as_index=False
     ).agg(num_plays=("track_name", "count"))
 df_top_tracks = df_top_tracks.sort_values(["num_plays"], ascending=False).reset_index(drop=True)
 
+top_track_artist = df_top_tracks.iloc[0, :].artist_name 
+
+# Query last.fm Postgres DB
+query = f"""
+    SELECT 
+        "name", image_url
+    FROM 
+        artists_lastfm
+    WHERE
+        "name" = '{top_artist}'
+    OR
+        "name" = '{top_track_artist}';
+"""
+cur.execute(query)
+image_dict = {name: url for name, url in cur.fetchall()} 
+top_artist_img = image_dict.get(top_artist)
+top_track_img = image_dict.get(top_track_artist)
+
 col1, col2 = st.columns(spec=[0.5, 0.5])
 
 with col1:
+    st.image(top_artist_img)
     st.subheader("most played artists")
     st.dataframe(df_top_artists, hide_index=True)
 with col2:
+    st.image(top_track_img)
     st.subheader("most played songs")
     st.dataframe(df_top_tracks, hide_index=True)
 

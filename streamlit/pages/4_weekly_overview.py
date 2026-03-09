@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 # Utils
 def filter_dataframe(df:pd.DataFrame, year:int, week:int) -> pd.DataFrame:
@@ -27,23 +28,24 @@ df_listening["week"] = df_listening["listened_at"].dt.isocalendar().week
 with st.container(horizontal=True):
     year = st.selectbox(
         "Year",
-        options=[x for x in range(2021, 2025+1)][::-1],
+        options=[x for x in range(2021, 2026+1)][::-1],
         width=100,
     ) 
 
     if year == 2021:
-       year_opts = [x for x in range(20, 52+1)][::-1]
+       week = [x for x in range(20, 52+1)]
     else:
-       year_opts = [x for x in range(1, 52+1)][::-1]
-    week = st.selectbox(
+       week = [x for x in range(1, 52+1)]
+    current_week = datetime.today().isocalendar().week
+    week_select = st.selectbox(
         "Week",
-        options=year_opts,
+        options=week,
         width=100,
-        index=2
+        index=current_week-1
     )
     
-df_current = filter_dataframe(df_listening, year, week)
-df_prev = filter_dataframe(df_listening, year, week-1)
+df_current = filter_dataframe(df_listening, year, week_select)
+df_prev = filter_dataframe(df_listening, year, week_select-1)
 # st.dataframe(df_prev)
     
 # Most listened artist

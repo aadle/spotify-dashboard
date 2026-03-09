@@ -1,26 +1,12 @@
-from airflow.sdk import dag
-from airflow.providers.standard.operators.bash import BashOperator
+from airflow.sdk import dag, task, task_group
 from pathlib import Path
-from utils.postgresql import make_postgres_query
-from typing import Dict
-# from urllib3.util import Retry
-import json
-import pendulum
-import requests
-import logging
+# from utils.postgresql import make_postgres_query
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 import time
-
-# calculate timestamp for current day at 00:00 UTC
-today_unixstamp = eval(pendulum.today("UTC").format("X"))
-
-# from DB, get latest entry w.r.t. listened at
-query = """
-    SELECT listened_at 
-        FROM temp_listening_history
-        ORDER BY listened_at DESC
-    LIMIT 1;
-"""
-latest_unixstamp = int(make_postgres_query(query)[0][0])
+import json
+import logging
+import requests
+import pendulum
 
 # Set the parameters for querying last.fm API
 dirpath = "secrets/lastfm"
@@ -32,69 +18,105 @@ with open(dirpath+"/lastfm.json") as f:
     print(f)
 
 BASE_URL = "http://ws.audioscrobbler.com/2.0/"
+NUM_REQUESTS = 200
 USER = "GammelPerson"
-request_parameters = {
-    "artist": None, # Iteratively change
-    "autocorrect": 1,
-    "username": "GammelPerson",
-    "api_key": api_credentials["client_id"],
-    "format": "json",
-    "method": "artist.getInfo"
-    }
-headers = {"user-agent": "GammelPerson_2025_data"} # identifier for the API. Recommended by the "unofficial" last.fm docs.
+POSTGRES_CONNECTION_ID = "local_db"
 
-def send_lastfm_request() -> Dict:
+@task
+def fetch_total_pages():
+    request_parameters = {
+        "limit": NUM_REQUESTS,
+        "user": USER,
+        "api_key": api_credentials["client_id"],
+        "format": "json",
+        "method": "library.getArtists",
+    }
+    headers = {"user-agent": "GammelPerson_2025_data"}
+
+    time.sleep(0.25)
     response = requests.get(
         url=BASE_URL, params=request_parameters, headers=headers
     )
-    # if "error" in response.json().keys():
-    #     return None
-    # else:
     results = response.json()
-    return results
-    
+    print("from lastfm:", results)
 
-def try_fetch_latest_lastfm(max_retries=5):
-    for i in range(max_retries):
+    total_pages = int(results["artists"]["@attr"]["totalPages"])
+    return list(range(1, total_pages + 1))[:10]
+
+@task
+def fetch_artists():
+    hook = PostgresHook(postgres_conn_id=POSTGRES_CONNECTION_ID)
+    query = """
+        SELECT 
+            DISTINCT(artist_name)
+        FROM
+            temp_listening_history;
+    """
+    result = hook.get_records(sql=query)
+    artists = [artist[0] for artist in result]
+    return artists
+
+@task(pool="lastfm_pool", pool_slots=1)
+def fetch_artist_data(artist:str, retries=5):
+    request_parameters = {
+        "limit": NUM_REQUESTS,
+        "user": USER,
+        "api_key": api_credentials["client_id"],
+        "format": "json",
+        # "method": "library.getArtists",
+        "artist": artist,
+        "method": "artist.getInfo",
+        "autocorrect": 1,
+    }
+    headers = {"user-agent": "GammelPerson_2025_data"}
+
+    response = requests.get(
+        url=BASE_URL, params=request_parameters, headers=headers
+    )
+    results = response.json()
+
+    for i in range(retries):
         try:
-            results = send_lastfm_request()
-            data = results["recenttracks"]["@attr"]
+            data = results
+            logging.info(f"Artist '{artist}' retrieved from API-method '{request_parameters["method"]}'.")
             return data
         except KeyError:
-            logging.error(f"Error code: {results["error"]}. {results["message"]}")
-            logging.info(f"Attempt #{i} of fetching data.")
-            time.sleep(1.6**i) # approximate to fibonacci backoff strategy
+            sleep_duration = 1.6**i
+            logging.warning(f"""
+            Error code '{results["error"]}': 
+                {results["message"]}
+            """
+            )
+            logging.warning(f"Attempt #{i} of fetching data.")
+            time.sleep(sleep_duration) # approximate to fibonacci backoff strategy
 
-def fetch_lastfm_data():
+@task
+def save_to_file(data):
+    pass
 
-    # Get list of artists to get data on
-    # - Have some criterion to which artists should be collected data on?
-    #   If so, requires joing with 'temp_listening_history' such that we can get
-    #   frequency and include if > 5 total listens or something.
+@task
+def load_to_postgres():
+    pass
 
-    artists_list = []
-    request_parameters["artist"] = artists_list[0]
-
-    init_data = try_fetch_latest_lastfm()
-    # write to .jsonl file...
-
-    for artist in artists_list[1:]:
-        request_parameters["artist"] = artist
-        data = try_fetch_latest_lastfm()
-
-        # save data in a desireable format
+@task 
+def print_out(res):
+    print(res)
 
 @dag(
-    dag_id="get_latest_lastfm_data",
+    dag_id="get_artist_info_lastfm",
     start_date=pendulum.datetime(2026, 2, 17, tz="UTC")
 )
-def GetLatestLastfmData():
-    t1 = BashOperator(
-    task_id="print_date",
-    bash_command="date",
-    )
+def GetArtistInfoLastfm():
+    artists = fetch_artists()
 
-    t1 
+    @task_group(group_id="etl_grouping")
+    def extract_group(artist):
+        page_response = fetch_artist_data(artist)
+        # save_to_file(page_response)
 
-GetLatestLastfmData()
+    extract_group.expand(artist=artists) >> print_out()
+    # >> load_to_postgres()
+     
+
+GetArtistInfoLastfm()
 

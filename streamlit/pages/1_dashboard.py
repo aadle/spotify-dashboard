@@ -11,7 +11,7 @@ df = st.session_state["listening"]
 with st.container():
     year = st.selectbox(
         "Choose year",
-        options=[x for x in range(2021, 2025+1)][::-1],
+        options=[x for x in range(2021, 2026+1)][::-1],
         width=100,
         label_visibility="collapsed",
 

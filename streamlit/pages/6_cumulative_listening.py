@@ -30,7 +30,7 @@ daily_counts["cumulative_plays"] = daily_counts.groupby("year")["plays"].cumsum(
 st.dataframe(daily_counts)
 
 fig = go.Figure()
-for year in list(range(2021, 2026)):
+for year in list(range(2021, 2026+1)):
     df_y = daily_counts.loc[daily_counts.year == year]
     fig.add_trace(
         go.Scatter(

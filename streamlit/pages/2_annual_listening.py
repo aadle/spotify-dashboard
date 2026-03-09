@@ -15,7 +15,7 @@ with st.container(horizontal=True):
 with st.container(horizontal=True):
     year = st.selectbox(
         "Choose year",
-        options=[x for x in range(2021, 2025+1)][::-1],
+        options=[x for x in range(2021, 2026+1)][::-1],
         width=100,
         label_visibility="collapsed",
     ) 
@@ -31,8 +31,11 @@ with st.container():
 
     col00, col11, col12 = st.columns([0.2, 0.4, 0.4])
     with col00:
+        try:
             st.space("large")
             st.image(f"imgs/wrapped_{year}.jpeg")
+        except:
+            pass
     
     with col11:
         genre_fig = ta.plot_top_artists(df_ta, year, top_n)
